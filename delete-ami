@@ -1,0 +1,28 @@
+import boto3
+from datetime import datetime, timedelta
+
+def delete_old_amis(event, context):
+    # Initialize Boto3 clients
+    ec2 = boto3.client('ec2')
+    
+    # Get current timestamp
+    current_time = datetime.utcnow()
+    
+    # Calculate timestamp 15 days ago
+    fifteen_days_ago = current_time - timedelta(days=5555)
+    
+    # Get all AMIs
+    amis = ec2.describe_images(Owners=['self'])['Images']
+    
+    # Filter AMIs older than 15 days
+    old_amis = [ami for ami in amis if ami['CreationDate'] < fifteen_days_ago.strftime('%Y-%m-%dT%H:%M:%S.%fZ')]
+    
+    # Delete old AMIs
+    for ami in old_amis:
+        print(f"Deleting AMI {ami['ImageId']} created on {ami['CreationDate']}")
+        ec2.deregister_image(ImageId=ami['ImageId'])
+    
+    return {
+        'statusCode': 200,
+        'body': 'Old AMIs deleted successfully'
+    }
